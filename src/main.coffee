@@ -4,39 +4,25 @@ webdriver = Npm.require 'selenium-webdriver'
 SeleniumRemote = Npm.require 'selenium-webdriver/remote'
 
 debug = (args...) ->
-  console.log 'Selenium - ', args... if Meteor.settings.selenium.debug
+  console.log 'Selenium -', args... if share.settings.debug
 
 
 class MeteorSelenium
+
   webdriver: webdriver
   Builder: share.Builder
   Downloader: share.Downloader
-
-  local_path: path.join process.env.PWD, '.meteor/local'
+  settings: share.settings
 
   @init: ->
-    return {} unless Meteor.settings.selenium.enabled
-    new MeteorSelenium Meteor.settings.selenium
+    return {} unless share.settings.enabled
+    new MeteorSelenium
 
-  constructor: (@settings) -> Meteor._wrapAsync(@init.bind this)()
+  constructor: -> Meteor._wrapAsync(@init.bind this)()
 
-  serverPath: ->
-    @settings.server.path ? path.join @local_path, 'selenium-server.jar'
-
-  chromePath: ->
-    ext = if process.platform is 'win32' then '.exe' else ''
-    @settings.chrome.path ? path.join @local_path, "selenium-chrome#{ext}"
-
-  _serverArgs: ->
-    @settings.server.args ? if @settings.browser is 'chrome'
-      ["-Dwebdriver.chrome.driver=#{@chromePath()}"]
-    else []
-
-  _serverAddr: -> @settings.server.remote ? @server?.address()
-  
   init: (callback) ->
     debug 'Initializing'
-    downloader = new @Downloader @settings, @serverPath(), @chromePath()
+    downloader = new @Downloader
     downloader.server (err) =>
       return callback err if err?
       downloader.chrome (err) =>
@@ -46,10 +32,10 @@ class MeteorSelenium
           @_buildDriver callback
 
   _startServer: (callback) ->
-    return callback null if @settings.server.remote?
+    return callback null unless @settings.server.start
     debug 'Starting server'
-    @server = new SeleniumRemote.SeleniumServer @serverPath(),
-      port: @settings.server.port, args: @_serverArgs()
+    @server = new SeleniumRemote.SeleniumServer @settings.server.path,
+      port: @settings.server.port, args: @settings.server.args
     @server.start().then (url) ->
       debug 'Server started', url
       callback null
@@ -65,7 +51,7 @@ class MeteorSelenium
       return callback err
     try
       @driver = new @Builder()
-        .usingServer @_serverAddr()
+        .usingServer @settings.server.addr
         .withCapabilities capabilities
         .build()
     catch err

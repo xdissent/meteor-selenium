@@ -7,7 +7,7 @@ SeleniumPortProber = Npm.require 'selenium-webdriver/net/portprober.js'
 SeleniumIO = Npm.require 'selenium-webdriver/io'
 
 debug = (args...) ->
-  console.log 'Selenium - ', args... if Meteor.settings.selenium.debug
+  console.log 'Selenium -', args... if share.settings.debug
 
 
 share.Builder = class Builder extends webdriver.Builder

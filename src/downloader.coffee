@@ -5,23 +5,23 @@ http = Npm.require 'http'
 unzip = Npm.require 'unzip'
 
 debug = (args...) ->
-  if Meteor.settings.selenium.debug
-    console.log 'Selenium Downloader - ', args...
+  console.log 'Selenium Downloader -', args... if share.settings.debug
 
 
 share.Downloader = class Downloader
-  constructor: (@settings, @server_path, @chrome_path) ->
+
+  settings: share.settings
 
   server: (callback) ->
-    return callback null if @settings.server.path?
-    @_checkAndDownload @settings.server.url, @server_path, @settings.server.md5,
-      callback
+    return callback null unless @settings.server.download
+    @_checkAndDownload @settings.server.url, @settings.server.path,
+      @settings.server.md5, callback
 
   chrome: (callback) ->
-    if @settings.chrome.path? or @settings.browser isnt 'chrome'
-      return callback null
-    @_checkAndDownload @settings.chrome.url, @chrome_path, @settings.chrome.md5,
-      (err) => if err? then callback err else @_chmodChrome callback
+    return callback null unless @settings.chrome.download
+    @_checkAndDownload @settings.chrome.url, @settings.chrome.path,
+      @settings.chrome.md5, (err) =>
+        if err? then callback err else @_chmodChrome callback
 
   _checkHash: (file, hash, callback) ->
     debug "Checking hash for #{file} expecting #{hash}"
@@ -68,4 +68,4 @@ share.Downloader = class Downloader
 
   _chmodChrome: (callback) ->
     return callback null if process.platform is 'win32'
-    fs.chmod @chrome_path, 0o755, callback
+    fs.chmod @settings.chrome.path, 0o755, callback
