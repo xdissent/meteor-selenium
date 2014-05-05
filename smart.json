@@ -1,0 +1,9 @@
+{
+  "name": "selenium",
+  "description": "Selenium WebDriverJS and standalone server controller",
+  "homepage": "https://github.com/xdissent/meteor-selenium",
+  "author": "Greg Thornton <xdissent@me.com> (http://xdissent.com)",
+  "version": "0.0.1",
+  "git": "https://github.com/xdissent/meteor-selenium.git",
+  "packages": {}
+}
