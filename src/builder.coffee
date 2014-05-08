@@ -6,11 +6,10 @@ SeleniumChrome = Npm.require 'selenium-webdriver/chrome.js'
 SeleniumPortProber = Npm.require 'selenium-webdriver/net/portprober.js'
 SeleniumIO = Npm.require 'selenium-webdriver/io'
 
-debug = (args...) ->
-  console.log 'Selenium -', args... if share.settings.debug
+debug = -> console.log 'Selenium -', arguments... if Selenium.settings.debug
 
 
-share.Builder = class Builder extends webdriver.Builder
+class Selenium.Builder extends webdriver.Builder
 
   _getPhantomJSArgs: -> @getCapabilities().get('phantomjs.cli.args') or []
 
@@ -45,13 +44,12 @@ share.Builder = class Builder extends webdriver.Builder
           .toCapabilities()
       else @getCapabilities()
 
-  build: ->
-    debug 'Building driver'
-    executor = SeleniumExecutors.createExecutor @_getService()
+  _getExecutor: -> SeleniumExecutors.createExecutor @_getService()
 
-    session = webdriver.promise.controlFlow().execute =>
+  _getSession: (executor) ->
+    webdriver.promise.controlFlow().execute =>
       command = new webdriver.Command webdriver.CommandName.GET_SESSIONS
-      webdriver.WebDriver.executeCommand_(executor, command).then (res) =>
+      Selenium.Driver.executeCommand_(executor, command).then (res) =>
         throw new Error 'Selenium get sessions failed' unless res?.status is 0
         if res.value.length > 0
           session_id = res.value[0].id
@@ -62,10 +60,14 @@ share.Builder = class Builder extends webdriver.Builder
         debug 'Creating session'
         command = new webdriver.Command webdriver.CommandName.NEW_SESSION
           .setParameter 'desiredCapabilities', @_getCapabilities()
-        webdriver.WebDriver.executeCommand_(executor, command).then (res) ->
+        Selenium.Driver.executeCommand_(executor, command).then (res) ->
           unless res?.status is 0
             throw new Error 'Selenium create session failed'
           new webdriver.Session res.sessionId, res.value
-    , 'MeteorSeleniumBuilder.build()'
+    , 'Selenium.Builder._getSession()'
 
-    new webdriver.WebDriver session, executor
+  build: ->
+    debug 'Building driver'
+    executor = @_getExecutor()
+    session = @_getSession executor
+    new Selenium.Driver session, executor
